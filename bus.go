@@ -1,35 +1,36 @@
 package gosebus
 
+import (
+	"github.com/inquizarus/gosebus/pkg/event"
+	"github.com/inquizarus/gosebus/pkg/handling"
+)
+
 type Bus interface {
-	On(pattern string, handler EventHandler) error
-	Handle(handler Handler) error
-	Publish(e Event) error
+	On(pattern string, handler handling.EventHandler) error
+	Handle(handler handling.Handler) error
+	Publish(e event.Event) error
 }
 
 type standardBus struct {
-	handlers []Handler
+	handlers []handling.Handler
 }
 
-func (b *standardBus) On(pattern string, handle EventHandler) error {
-	return b.Handle(&standardHandler{
-		pattern:        pattern,
-		handle:         handle,
-		wildcardSymbol: "*",
-	})
+func (b *standardBus) On(pattern string, eh handling.EventHandler) error {
+	return b.Handle(handling.NewStandardEventHandler(eh, handling.HandlerOptionWithPattern(pattern)))
 }
 
-func (b *standardBus) Handle(h Handler) error {
+func (b *standardBus) Handle(h handling.Handler) error {
 	b.handlers = append(b.handlers, h)
 	return nil
 }
 
-func (b *standardBus) Publish(e Event) error {
+func (b *standardBus) Publish(e event.Event) error {
 	for _, h := range b.handlers {
 		if h.Match(e) {
-			go func(e Event) {
+			go func(h handling.Handler, e event.Event) {
 				h.Handle(e)
 				// TODO: add something that removes this handler if runOnce is true
-			}(e)
+			}(h, e)
 		}
 	}
 	return nil
@@ -37,7 +38,7 @@ func (b *standardBus) Publish(e Event) error {
 
 func New() Bus {
 	return &standardBus{
-		handlers: []Handler{},
+		handlers: []handling.Handler{},
 	}
 }
 

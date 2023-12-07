@@ -5,27 +5,39 @@ import (
 	"time"
 
 	"github.com/inquizarus/gosebus"
-	"github.com/stretchr/testify/assert"
+	"github.com/inquizarus/gosebus/pkg/event"
 )
 
 func TestThatgosebusWorks(t *testing.T) {
 	b := gosebus.New()
-	count := 0
-	b.On("test_event", func(e gosebus.Event) {
-		count++
+	done := make(chan bool)
+
+	b.On("test_event", func(_ event.Event) {
+		done <- true
 	})
-	b.Publish(gosebus.NewEvent("test_event", nil))
-	time.Sleep(time.Microsecond * 50) // Allow for some time as handling of events occurs in goroutines
-	assert.Equal(t, 1, count)
+
+	b.Publish(event.NewEvent("test_event", nil))
+
+	select {
+	case <-done:
+		// Test passed
+	case <-time.After(time.Millisecond * 50):
+		t.Errorf("timed out waiting for event handler")
+	}
 }
 
 func TestThatgosebusWildcardWorks(t *testing.T) {
 	b := gosebus.New()
-	count := 0
-	b.On("*_test_*", func(e gosebus.Event) {
-		count++
+	done := make(chan bool)
+	b.On("*_test_*", func(e event.Event) {
+		done <- true
 	})
-	b.Publish(gosebus.NewEvent("trigger_test_event", nil))
-	time.Sleep(time.Microsecond * 10) // Allow for some time as handling of events occurs in goroutines
-	assert.Equal(t, 1, count)
+	b.Publish(event.NewEvent("trigger_test_event", nil))
+
+	select {
+	case <-done:
+	// Test passed
+	case <-time.After(time.Millisecond * 50):
+		t.Errorf("timed out waiting for event handler")
+	}
 }
