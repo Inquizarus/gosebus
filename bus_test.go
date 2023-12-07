@@ -6,6 +6,7 @@ import (
 
 	"github.com/inquizarus/gosebus"
 	"github.com/inquizarus/gosebus/pkg/event"
+	"github.com/inquizarus/gosebus/pkg/handling"
 )
 
 func TestThatgosebusWorks(t *testing.T) {
@@ -39,5 +40,21 @@ func TestThatgosebusWildcardWorks(t *testing.T) {
 	// Test passed
 	case <-time.After(time.Millisecond * 50):
 		t.Errorf("timed out waiting for event handler")
+	}
+}
+
+func TestHandlerAppliedOnlyOnce(t *testing.T) {
+	b := gosebus.New()
+	counter := 0
+	handler := handling.NewStandardEventHandler(func(e event.Event) {
+		counter++
+	}, handling.HandlerOptionWithPattern("test_event"), handling.HandlerOptionRunOnce())
+
+	b.Handle(handler)
+	b.Publish(event.NewEvent("test_event", nil))
+	b.Publish(event.NewEvent("test_event", nil))
+
+	if counter != 1 {
+		t.Errorf("handler ran more than once")
 	}
 }

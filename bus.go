@@ -29,11 +29,22 @@ func (b *standardBus) Publish(e event.Event) error {
 		if h.Match(e) {
 			go func(h handling.Handler, e event.Event) {
 				h.Handle(e)
-				// TODO: add something that removes this handler if runOnce is true
+				if h.ShouldRunOnce() {
+					b.handlers = b.removeHandler(b.handlers, h)
+				}
 			}(h, e)
 		}
 	}
 	return nil
+}
+
+func (b *standardBus) removeHandler(handlers []handling.Handler, h handling.Handler) []handling.Handler {
+	for i, h2 := range handlers {
+		if h.Equals(h2) {
+			return append(handlers[:i], handlers[i+1:]...)
+		}
+	}
+	return handlers
 }
 
 func New() Bus {
