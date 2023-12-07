@@ -6,7 +6,7 @@ import (
 
 	"github.com/inquizarus/gosebus"
 	"github.com/inquizarus/gosebus/pkg/event"
-	"github.com/inquizarus/gosebus/pkg/handling"
+	"github.com/inquizarus/gosebus/pkg/handler"
 )
 
 func TestThatgosebusWorks(t *testing.T) {
@@ -46,12 +46,13 @@ func TestThatgosebusWildcardWorks(t *testing.T) {
 func TestHandlerAppliedOnlyOnce(t *testing.T) {
 	b := gosebus.New()
 	counter := 0
-	handler := handling.NewStandardEventHandler(func(e event.Event) {
+	handler := handler.New(func(e event.Event) {
 		counter++
-	}, handling.HandlerOptionWithPattern("test_event"), handling.HandlerOptionRunOnce())
+	}, handler.WithPattern("test_event"), handler.RunOnce())
 
 	b.Handle(handler)
 	b.Publish(event.NewEvent("test_event", nil))
+	time.Sleep(time.Nanosecond)
 	b.Publish(event.NewEvent("test_event", nil))
 
 	if counter != 1 {

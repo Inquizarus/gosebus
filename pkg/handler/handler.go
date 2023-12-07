@@ -1,7 +1,8 @@
-package handling
+package handler
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/inquizarus/gosebus/pkg/event"
@@ -28,6 +29,8 @@ type standardHandler struct {
 	handle         EventHandler
 	wildcardSymbol string
 	runOnce        bool
+	invoked        bool
+	mutex          sync.Mutex
 }
 
 func (h *standardHandler) ShouldRunOnce() bool {
@@ -70,17 +73,28 @@ func (h *standardHandler) Match(e event.Event) bool {
 }
 
 func (h *standardHandler) Handle(e event.Event) error {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	if h.ShouldRunOnce() && h.invoked {
+		return nil
+	}
+
 	h.handle(e)
+	h.invoked = true
+
 	return nil
 }
 
-func NewStandardEventHandler(handler EventHandler, options ...HandlerOption) Handler {
+func New(handler EventHandler, options ...HandlerOption) Handler {
 	h := standardHandler{
 		id:             uuid.New().String(),
 		pattern:        defaultPattern,
 		handle:         handler,
 		wildcardSymbol: defaultWildcardSymbol,
 		runOnce:        defaultRunOnce,
+		invoked:        false,
+		mutex:          sync.Mutex{},
 	}
 
 	for _, option := range options {

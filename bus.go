@@ -2,24 +2,24 @@ package gosebus
 
 import (
 	"github.com/inquizarus/gosebus/pkg/event"
-	"github.com/inquizarus/gosebus/pkg/handling"
+	"github.com/inquizarus/gosebus/pkg/handler"
 )
 
 type Bus interface {
-	On(pattern string, handler handling.EventHandler) error
-	Handle(handler handling.Handler) error
+	On(pattern string, handler handler.EventHandler) error
+	Handle(handler handler.Handler) error
 	Publish(e event.Event) error
 }
 
 type standardBus struct {
-	handlers []handling.Handler
+	handlers []handler.Handler
 }
 
-func (b *standardBus) On(pattern string, eh handling.EventHandler) error {
-	return b.Handle(handling.NewStandardEventHandler(eh, handling.HandlerOptionWithPattern(pattern)))
+func (b *standardBus) On(pattern string, eh handler.EventHandler) error {
+	return b.Handle(handler.New(eh, handler.WithPattern(pattern)))
 }
 
-func (b *standardBus) Handle(h handling.Handler) error {
+func (b *standardBus) Handle(h handler.Handler) error {
 	b.handlers = append(b.handlers, h)
 	return nil
 }
@@ -27,7 +27,7 @@ func (b *standardBus) Handle(h handling.Handler) error {
 func (b *standardBus) Publish(e event.Event) error {
 	for _, h := range b.handlers {
 		if h.Match(e) {
-			go func(h handling.Handler, e event.Event) {
+			go func(h handler.Handler, e event.Event) {
 				h.Handle(e)
 				if h.ShouldRunOnce() {
 					b.handlers = b.removeHandler(b.handlers, h)
@@ -38,7 +38,7 @@ func (b *standardBus) Publish(e event.Event) error {
 	return nil
 }
 
-func (b *standardBus) removeHandler(handlers []handling.Handler, h handling.Handler) []handling.Handler {
+func (b *standardBus) removeHandler(handlers []handler.Handler, h handler.Handler) []handler.Handler {
 	for i, h2 := range handlers {
 		if h.Equals(h2) {
 			return append(handlers[:i], handlers[i+1:]...)
@@ -49,7 +49,7 @@ func (b *standardBus) removeHandler(handlers []handling.Handler, h handling.Hand
 
 func New() Bus {
 	return &standardBus{
-		handlers: []handling.Handler{},
+		handlers: []handler.Handler{},
 	}
 }
 

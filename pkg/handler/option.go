@@ -1,26 +1,26 @@
-package handling
+package handler
 
 type HandlerOption func(h *standardHandler)
 
-func HandlerOptionWithID(id string) HandlerOption {
+func WithID(id string) HandlerOption {
 	return func(h *standardHandler) {
 		h.id = id
 	}
 }
 
-func HandlerOptionWithPattern(pattern string) HandlerOption {
+func WithPattern(pattern string) HandlerOption {
 	return func(h *standardHandler) {
 		h.pattern = pattern
 	}
 }
 
-func HandlerOptionWithWildcardSymbol(symbol string) HandlerOption {
+func WithWildcardSymbol(symbol string) HandlerOption {
 	return func(h *standardHandler) {
 		h.wildcardSymbol = symbol
 	}
 }
 
-func HandlerOptionRunOnce() HandlerOption {
+func RunOnce() HandlerOption {
 	return func(h *standardHandler) {
 		h.runOnce = true
 	}
